@@ -3,9 +3,11 @@ from PIL import Image
 import random
 import math
 
+# https://en.wikipedia.org/wiki/Spirograph
+# https://en.wikipedia.org/wiki/Epicycloid
+
 
 class Epicycloid:
-    # https://en.wikipedia.org/wiki/Epicycloid
 
     def __init__(self, img, center):
         self.img = img
@@ -13,17 +15,24 @@ class Epicycloid:
 
         self.color = [255, 0, 0]
 
-        self.o_rad = random.randrange(20, 40)
-        self.i_rad = self.o_rad * random.randrange(2,4)
+        self.o_rad = random.randrange(40, 80)
+        k = random.randrange(5, 10) / random.randrange(2, 4)
+        self.i_rad = self.o_rad * k
 
         print("R = {0}\tr = {1}".format(self.o_rad, self.i_rad))
 
     def draw(self):
+
+        # Define some stuff
         teta = 0
         r = self.o_rad
         R = self.i_rad
 
-        while teta <= 20:
+        # Get start pos for teta = 0
+        start_x = int(round(self.center[0] + (R + r) * math.cos(teta) - r * math.cos(((R + r) / r) * teta)))
+        start_y = int(round(self.center[1] + (R + r) * math.sin(teta) - r * math.sin(((R + r) / r) * teta)))
+
+        while True:
 
             # Calc pos
             x = self.center[0] + (R + r) * math.cos(teta) - r * math.cos(((R + r)/r) * teta)
@@ -34,9 +43,12 @@ class Epicycloid:
             y = int(round(y))
             self.img[y][x] = self.color
 
-            # Advance teta
-            teta += 0.005
-
+            # Check if at beginning of circle and check that teta is at least 2 pi
+            if start_x == x and start_y == y and teta >= 2*math.pi:
+                break
+            else:
+                # Advance teta
+                teta += 0.002
 
 def main():
 
