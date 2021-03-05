@@ -15,8 +15,8 @@ class Epicycloid:
 
         self.color = [255, 0, 0]
 
-        self.o_rad = random.randrange(40, 80)
-        k = random.randrange(5, 10) / random.randrange(2, 4)
+        self.o_rad = random.randrange(40, 100)
+        k = random.randrange(25, 35) / random.randrange(9, 12)
         self.i_rad = self.o_rad * k
 
         print("R = {0}\tr = {1}".format(self.o_rad, self.i_rad))
