@@ -1,75 +1,116 @@
 import numpy as np
-from PIL import Image
-import random
 import math
+import random
+from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFilter
 
 # https://en.wikipedia.org/wiki/Spirograph
 # https://en.wikipedia.org/wiki/Epicycloid
 
+width = 3840
+height = 2160
+layers = 1
 
-class Epicycloid:
 
-    def __init__(self, img, center):
-        self.img = img
-        self.center = center
+class Canvas:
 
-        self.color = [255, 0, 0]
+    def __init__(self):
+        global width, height
 
-        self.o_rad = random.randrange(40, 100)
-        k = random.randrange(25, 35) / random.randrange(9, 12)
-        self.i_rad = self.o_rad * k
+        # Init the image and drawer
+        self.image = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+        self.draw = ImageDraw.Draw(self.image)
 
-        print("R = {0}\tr = {1}".format(self.o_rad, self.i_rad))
+    def draw_circle(self, x, y, rad, color):
+        draw = ImageDraw.Draw(self.image)
+        draw.ellipse((x-rad, y-rad, x+rad, y+rad), fill=color)
 
-    def draw(self):
+    def draw_epicycloid(self, max_rad, min_rad, center, line_width):
 
-        # Define some stuff
+        # Start angle
         teta = 0
-        r = self.o_rad
-        R = self.i_rad
+
+        # Outer circle
+        r = 0
+
+        # Factor for the relation between outer and inner circle
+        k = 0
+
+        # Search for for one set until to outer circle of the epicycloid is in the dimensions
+        while (2*r + k*r) < min_rad or (2*r + k*r) > max_rad:
+            r = random.randrange(int(max_rad * 0.05), int(max_rad * 0.6))
+            k = random.randrange(12, 18) / random.randrange(10, 20)
 
         # Get start pos for teta = 0
-        start_x = int(round(self.center[0] + (R + r) * math.cos(teta) - r * math.cos(((R + r) / r) * teta)))
-        start_y = int(round(self.center[1] + (R + r) * math.sin(teta) - r * math.sin(((R + r) / r) * teta)))
+        start_x = int(round(center[0] + r*(k + 1) * math.cos(teta) - r * math.cos((k + 1) * teta)))
+        start_y = int(round(center[1] + r*(k + 1) * math.sin(teta) - r * math.sin((k + 1) * teta)))
 
         while True:
 
             # Calc pos
-            x = self.center[0] + (R + r) * math.cos(teta) - r * math.cos(((R + r)/r) * teta)
-            y = self.center[1] + (R + r) * math.sin(teta) - r * math.sin(((R + r) / r) * teta)
+            x = int(round(center[0] + r * (k + 1) * math.cos(teta) - r * math.cos((k + 1) * teta)))
+            y = int(round(center[1] + r * (k + 1) * math.sin(teta) - r * math.sin((k + 1) * teta)))
 
-            # Round and draw pos
-            x = int(round(x))
-            y = int(round(y))
-            self.img[y][x] = self.color
+            # Draw
+            rad = line_width/2
+            self.draw.ellipse((x-rad, y-rad, x+rad, y+rad), fill=color_angle(teta, 60, 255))
 
             # Check if at beginning of circle and check that teta is at least 2 pi
-            if start_x == x and start_y == y and teta >= 2*math.pi:
+            if start_x == x and start_y == y and teta >= 2 * math.pi:
                 break
             else:
                 # Advance teta
                 teta += 0.002
 
+
+def color_angle(angle, full_band_angle, alpha):
+    """
+    One color rgb value is always 0
+    :param alpha: alpha value for the color, stays constant
+    :param full_band_angle: at what angle the color band starts over
+    :param angle: angle for which the color
+    :return: color
+    """
+
+    # is the angle between "angle" and the last start point for a new color band
+    # is < that full_band_angle
+    relative_angle = angle
+    while relative_angle > full_band_angle:
+        relative_angle -= full_band_angle
+
+    # Set red without offset and clamp to 0
+    red = -(255/((1/3) * full_band_angle)) * abs(relative_angle + 0) + 255
+    if red <= 0:
+        # Try other function bc red should got down stay at 0 and then go up again
+        red = -(255 / ((1 / 3) * full_band_angle)) * abs(relative_angle - ((3/3) * full_band_angle)) + 255
+    elif red <= 0:
+        red = 0
+    red = int(round(red))
+
+    # Set green with a 1/3 fba offset
+    green = -(255 / ((1 / 3) * full_band_angle)) * abs(relative_angle - ((1/3) * full_band_angle)) + 255
+    green = int(round(green))
+    if green <= 0:
+        green = 0
+
+    # Set blue with a 2/3 fba offset
+    blue = -(255 / ((1 / 3) * full_band_angle)) * abs(relative_angle - ((2/3) * full_band_angle)) + 255
+    blue = int(round(blue))
+    if blue <= 0:
+        blue = 0
+
+    r = (red, green, blue, alpha)
+    return r
+
+
 def main():
+    global width, height, layers
 
-    layers = 1
-    width = 1600
-    height = 900
-
-    # Image
-    image = np.zeros((height, width, 3), dtype=np.uint8)
-    for y in range(len(image)):
-        for x in range(len(image[y])):
-            image[y][x][0] = 255
-            image[y][x][1] = 255
-            image[y][x][2] = 255
-
-    e = Epicycloid(image, [width/2, height/2])
-    e.draw()
-
-    data = Image.fromarray(image, 'RGB')
-    data.save("Test.png")
-    data.show()
+    c = Canvas()
+    c.draw_epicycloid(width/2 + 100, width/2 - 100, (width/2, height/2), 10)
+    c.image = c.image.filter(ImageFilter.GaussianBlur(radius=8))
+    c.image.show()
 
 
 if __name__ == "__main__":
