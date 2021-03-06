@@ -23,6 +23,11 @@ class Canvas:
         self.image = Image.new('RGBA', (width, height), (0, 0, 0, 0))
         self.draw = ImageDraw.Draw(self.image)
 
+        self.color_map = color_map((255, 0, 0, 100),
+                                   (0, 255, 0, 255),
+                                   (0, 0, 255, 255),
+                                   (255, 0, 0, 200))
+
     def draw_circle(self, x, y, rad, color):
         draw = ImageDraw.Draw(self.image)
         draw.ellipse((x-rad, y-rad, x+rad, y+rad), fill=color)
@@ -41,7 +46,7 @@ class Canvas:
         # Search for for one set until to outer circle of the epicycloid is in the dimensions
         while (2*r + k*r) < min_rad or (2*r + k*r) > max_rad:
             r = random.randrange(int(max_rad * 0.05), int(max_rad * 0.6))
-            k = random.randrange(12, 18) / random.randrange(10, 20)
+            k = random.randrange(5, 50)/10
 
         # Get start pos for teta = 0
         start_x = int(round(center[0] + r*(k + 1) * math.cos(teta) - r * math.cos((k + 1) * teta)))
@@ -55,7 +60,11 @@ class Canvas:
 
             # Draw
             rad = line_width/2
-            self.draw.ellipse((x-rad, y-rad, x+rad, y+rad), fill=color_angle(teta, 60, 255))
+            try:
+                color = tuple(self.color_map[y][x])
+            except:
+                color = (0, 0, 0, 255)
+            self.draw.ellipse((x-rad, y-rad, x+rad, y+rad), fill=color)
 
             # Check if at beginning of circle and check that teta is at least 2 pi
             if start_x == x and start_y == y and teta >= 2 * math.pi:
@@ -143,16 +152,49 @@ def color_angle(angle, full_band_angle, alpha):
     return r
 
 
+def color_map(tl_color, tr_color, bl_color, br_color):
+    """
+    Makes a map with 3 input colors to get a complete map
+    Colors approach linear
+    :param tl_color: color at top left
+    :param tr_color: color at top right
+    :param bl_color: color at bottom left
+    :param br_color: color at bottom right
+    :return: np array with a color for every coordinate
+    """
+
+    global width, height
+
+    m = np.zeros((height, width, 4), dtype=np.uint8)
+
+    for c in range(4):
+        for y in range(len(m)):
+
+            # define the value for the most left and right edge for every new row
+            left = ((bl_color[c] - tl_color[c]) / (height - 1)) * y + tl_color[c]
+            right = ((br_color[c] - tr_color[c]) / (height - 1)) * y + tr_color[c]
+
+            for x in range(len(m[y])):
+
+                # get color for every x in the line
+                value = ((right-left)/(width-1)) * x + left
+                m[y][x][c] = value
+
+    return m
+
+
 def main():
     global width, height, layers
 
-    for i in range(10):
+    for i in range(3):
         c = Canvas()
-        c.draw_hypocycloid(height/2 + 200, height/2 - 200, (width/2, height/2), 20)
+        c.draw_epicycloid(height/2 + 200, height/2 - 200, (width/2, height/2), 20)
         c.image = c.image.filter(ImageFilter.GaussianBlur(radius=20))
         # c.image.show()
         c.image.save("test_images/img{0}.png".format(str(i).rjust(2, '0')))
         print('Generated image')
+
+
 
 
 if __name__ == "__main__":
