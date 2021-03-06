@@ -7,6 +7,7 @@ from PIL import ImageFilter
 
 # https://en.wikipedia.org/wiki/Spirograph
 # https://en.wikipedia.org/wiki/Epicycloid
+# https://en.wikipedia.org/wiki/Hypocycloid
 
 width = 3840
 height = 2160
@@ -63,6 +64,44 @@ class Canvas:
                 # Advance teta
                 teta += 0.002
 
+    def draw_hypocycloid(self, max_rad, min_rad, center, line_width):
+
+        # Start angle
+        teta = 0
+
+        # rotating circle
+        r = 0
+
+        # Factor for the relation between rotating and static circle
+        k = 0
+
+        # Search for for one set until to outer circle of the epicycloid is in the dimensions
+        while (k*r) < min_rad or (k*r) > max_rad:
+            r = random.randrange(int(max_rad * 0.05), int(max_rad * 0.2))
+            k = random.randrange(5, 50)/10
+            # k = random.randrange(5, 10) / random.randrange(5, 15)
+
+        # Get start pos for teta = 0
+        start_x = int(round(center[0] + r*(k - 1) * math.cos(teta) + r * math.cos((k - 1) * teta)))
+        start_y = int(round(center[1] + r*(k - 1) * math.sin(teta) - r * math.sin((k - 1) * teta)))
+
+        while True:
+
+            # Calc pos
+            x = int(round(center[0] + r * (k - 1) * math.cos(teta) + r * math.cos((k - 1) * teta)))
+            y = int(round(center[1] + r * (k - 1) * math.sin(teta) - r * math.sin((k - 1) * teta)))
+
+            # Draw
+            rad = line_width/2
+            self.draw.ellipse((x-rad, y-rad, x+rad, y+rad), fill=color_angle(teta, 60, 255))
+
+            # Check if at beginning of circle and check that teta is at least 2 pi
+            if start_x == x and start_y == y and teta >= 2 * math.pi:
+                break
+            else:
+                # Advance teta
+                teta += 0.002
+
 
 def color_angle(angle, full_band_angle, alpha):
     """
@@ -107,10 +146,13 @@ def color_angle(angle, full_band_angle, alpha):
 def main():
     global width, height, layers
 
-    c = Canvas()
-    c.draw_epicycloid(width/2 + 100, width/2 - 100, (width/2, height/2), 10)
-    c.image = c.image.filter(ImageFilter.GaussianBlur(radius=8))
-    c.image.show()
+    for i in range(10):
+        c = Canvas()
+        c.draw_hypocycloid(height/2 + 200, height/2 - 200, (width/2, height/2), 20)
+        c.image = c.image.filter(ImageFilter.GaussianBlur(radius=20))
+        # c.image.show()
+        c.image.save("test_images/img{0}.png".format(str(i).rjust(2, '0')))
+        print('Generated image')
 
 
 if __name__ == "__main__":
