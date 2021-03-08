@@ -1,3 +1,7 @@
+from config import *
+from color_functions import *
+
+import os
 import numpy as np
 import math
 import random
@@ -9,14 +13,10 @@ from PIL import ImageFilter
 # https://en.wikipedia.org/wiki/Epicycloid
 # https://en.wikipedia.org/wiki/Hypocycloid
 
-width = 1920
-height = 1080
-
 
 class Graph:
 
     def __init__(self, graph_style, center, min_rad, max_rad, line_width, color_style, blur_rad):
-        global width, height
 
         # Get variables
         self.graph_style = graph_style
@@ -28,20 +28,25 @@ class Graph:
         self.blur_rad = blur_rad
 
         # Init the image and drawer
-        self.image = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+        self.image = Image.new('RGBA', (total_width, total_height), (0, 0, 0, 0))
         self.draw = ImageDraw.Draw(self.image)
 
         # Setup color
         if self.color_style == 'c':
             # Choose a color if color style is a constant color
-            self.color = rand_color()
+            self.color = get_rand_color()
         elif self.color_style == 'a':
             # Choose a full band angle if color style is angle and the alpha value
             self.full_band_angle = random.randrange(15, 200) / 10
             self.color_alpha = random.randrange(200, 255)
         elif self.color_style == 'm':
             # Create/Choose a color map if the style is a map
-            self.color_map = color_map(rand_color(), rand_color(), rand_color(), rand_color())
+            map_dir = "color_maps/{0}x{1}/".format(width, height)
+            files = os.listdir(map_dir)
+            file = random.choice(files)
+            self.color_map = Image.open(map_dir + file)
+            self.color_map = np.array(self.color_map)
+
         else:
             print('Wrong Color style')
 
@@ -61,7 +66,7 @@ class Graph:
         if self.color_style == 'c':
             return self.color
         elif self.color_style == 'a':
-            return tuple(color_angle(teta, self.full_band_angle, self.color_alpha))
+            return tuple(get_color_from_angle(teta, self.full_band_angle, self.color_alpha))
         elif self.color_style == 'm':
             try:
                 return tuple(self.color_map[y][x])
@@ -145,90 +150,19 @@ class Graph:
                 teta += 0.002
 
 
-def rand_color():
-    r = random.randint(0, 255)
-    g = random.randint(0, 255)
-    b = random.randint(0, 255)
+def get_max_image_index():
+    # Get the highest index in the color map dir
+    max_index = 0
 
-    # Make it transparent only with a small chance
-    trans = random.randrange(0, 3)
-    if trans == 0:
-        a = random.randint(100, 255)
-    else:
-        a = 255
+    img_dir = "images/"
+    files = os.listdir(img_dir)
 
-    ret = (r, g, b, a)
-    return ret
+    for file in files:
+        index = int(file.replace('img_', '').replace('.png', ''))
+        if index > max_index:
+            max_index = index
 
-
-def color_angle(angle, full_band_angle, alpha):
-    """
-    One color rgb value is always 0
-    :param full_band_angle: at what angle the color band starts over
-    :param angle: angle for which the color
-    :param alpha: alpha value for the color, stays constant
-    :return: color
-    """
-
-    # is the angle between "angle" and the last start point for a new color band
-    # is < that full_band_angle
-    relative_angle = angle
-    while relative_angle > full_band_angle:
-        relative_angle -= full_band_angle
-
-    # Set red without offset and clamp to 0
-    red = -(255 / ((1 / 3) * full_band_angle)) * abs(relative_angle + 0) + 255
-    if red <= 0:
-        # Try other function bc red should got down stay at 0 and then go up again
-        red = -(255 / ((1 / 3) * full_band_angle)) * abs(relative_angle - ((3 / 3) * full_band_angle)) + 255
-    elif red <= 0:
-        red = 0
-    red = int(round(red))
-
-    # Set green with a 1/3 fba offset
-    green = -(255 / ((1 / 3) * full_band_angle)) * abs(relative_angle - ((1 / 3) * full_band_angle)) + 255
-    green = int(round(green))
-    if green <= 0:
-        green = 0
-
-    # Set blue with a 2/3 fba offset
-    blue = -(255 / ((1 / 3) * full_band_angle)) * abs(relative_angle - ((2 / 3) * full_band_angle)) + 255
-    blue = int(round(blue))
-    if blue <= 0:
-        blue = 0
-
-    r = (red, green, blue, alpha)
-    return r
-
-
-def color_map(tl_color, tr_color, bl_color, br_color):
-    """
-    Makes a map with 3 input colors to get a complete map
-    Colors approach linear
-    :param tl_color: color at top left
-    :param tr_color: color at top right
-    :param bl_color: color at bottom left
-    :param br_color: color at bottom right
-    :return: np array with a color for every coordinate
-    """
-
-    global width, height
-
-    m = np.zeros((height, width, 4), dtype=np.uint8)
-
-    for c in range(4):
-        for y in range(len(m)):
-
-            # define the value for the most left and right edge for every new row
-            left = ((bl_color[c] - tl_color[c]) / (height - 1)) * y + tl_color[c]
-            right = ((br_color[c] - tr_color[c]) / (height - 1)) * y + tr_color[c]
-
-            for x in range(len(m[y])):
-                # get color for every x in the line
-                value = ((right - left) / (width - 1)) * x + left
-                m[y][x][c] = int(round(value))
-
-    return m
+    return max_index
 
 
 def compose_layers(images):
@@ -255,7 +189,6 @@ def create_layer(layer_style):
     :param layer_style: b - background; m - middle; f - foreground
     :return: image of the layer
     """
-    global width, height
 
     # Set the random layer parameter stuff
     if layer_style == 'b':
@@ -299,7 +232,6 @@ def create_layer(layer_style):
 
 
 def generate_image():
-    global width, height
 
     # Set number of layers
     b_layers = random.randrange(1, 3)
@@ -307,7 +239,7 @@ def generate_image():
     f_layers = random.randrange(1, 3)
 
     # Background
-    layers = [Image.new('RGBA', (width, height), (0, 0, 0, 255))]
+    layers = [Image.new('RGBA', (total_width, total_height), (0, 0, 0, 255))]
 
     # Create background layers
     for i in range(b_layers):
@@ -331,11 +263,10 @@ def generate_image():
 
 
 if __name__ == "__main__":
-    i = 0
     while True:
         print()
         img = generate_image()
+        i = get_max_image_index() + 1
         img.save('images/img_{0}.png'.format(str(i).rjust(3, '0')))
         print('Image generated')
 
-        i += 1
