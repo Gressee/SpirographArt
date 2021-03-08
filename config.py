@@ -1,3 +1,11 @@
+import os
+
+if os.name == 'posix':
+    path_spacer = '/'
+else:
+    path_spacer = '\\'
+
+
 # width = 1920
 # height = 1080
 width = 4096

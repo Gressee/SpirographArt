@@ -41,7 +41,7 @@ class Graph:
             self.color_alpha = random.randrange(200, 255)
         elif self.color_style == 'm':
             # Create/Choose a color map if the style is a map
-            map_dir = "color_maps/{0}x{1}/".format(width, height)
+            map_dir = "color_maps" + path_spacer + "{0}x{1}".format(width, height) + path_spacer
             files = os.listdir(map_dir)
             file = random.choice(files)
             self.color_map = Image.open(map_dir + file)
@@ -89,7 +89,7 @@ class Graph:
             k = random.randrange(25, 50) / 10
             d = r * random.randrange(5, 30) / 10
 
-        print("Epitrochoid: r = {0} \tk = {1} \td/r = {2}".format(r, k, d / r))
+        print("Epitrochoid:\tr = {0} \tk = {1} \td/r = {2}".format(r, k, d / r))
 
         # Get start pos for teta = 0
         start_x = int(round(self.center[0] + r * (k + 1) * math.cos(teta) - d * math.cos((k + 1) * teta)))
@@ -126,7 +126,7 @@ class Graph:
             k = random.randrange(5, 50) / 10
             d = r * random.randrange(5, 50) / 10
 
-        print("Hypotrochoid: r = {0} \tk = {1} \td/r = {2}".format(r, k, d / r))
+        print("Hypotrochoid:\tr = {0} \tk = {1} \td/r = {2}".format(r, k, d / r))
 
         # Get start pos for teta = 0
         start_x = int(round(self.center[0] + r * (k - 1) * math.cos(teta) + d * math.cos((k - 1) * teta)))
@@ -154,7 +154,7 @@ def get_max_image_index():
     # Get the highest index in the color map dir
     max_index = 0
 
-    img_dir = "images/"
+    img_dir = "images" + path_spacer
     files = os.listdir(img_dir)
 
     for file in files:
@@ -267,6 +267,6 @@ if __name__ == "__main__":
         print()
         img = generate_image()
         i = get_max_image_index() + 1
-        img.save('images/img_{0}.png'.format(str(i).rjust(3, '0')))
+        img.save('images' + path_spacer + 'img_{0}.png'.format(str(i).rjust(3, '0')))
         print('Image generated')
 

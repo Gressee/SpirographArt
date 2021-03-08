@@ -19,7 +19,7 @@ def get_max_color_map_index():
     # Get the highest index in the color map dir
     max_index = 0
 
-    map_dir = "color_maps/{0}x{1}".format(width, height)
+    map_dir = "color_maps" + path_spacer + "{0}x{1}".format(width, height) + path_spacer
     files = os.listdir(map_dir)
 
     for file in files:
@@ -31,7 +31,7 @@ def get_max_color_map_index():
 
 
 def main():
-    map_dir = "color_maps/{0}x{1}".format(width, height)
+    map_dir = "color_maps" + path_spacer + "{0}x{1}".format(width, height) + path_spacer
     index = get_max_color_map_index() + 1
 
     color_range = (150, 150, 150, 30)
@@ -51,7 +51,7 @@ def main():
                                        get_rand_color())
 
         color_map = Image.fromarray(color_map, 'RGBA')
-        color_map.save("{0}/map_{1}.png".format(map_dir, str(index).rjust(3, '0')))
+        color_map.save("{0}map_{1}.png".format(map_dir, str(index).rjust(3, '0')))
         index += 1
 
         print("Generated color map with base: {0}".format(base_color))

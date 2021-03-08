@@ -54,7 +54,6 @@ def get_rand_color(base_color=(-1, -1, -1, -1), color_range=(-1, -1, -1, -1)):
         high = basics.clamp(int(round(base_color[3] - color_range[3] / 2)), 0, 255)
         a = random.randint(low, high)
 
-
         ret = tuple((r, g, b, a))
 
     return ret
